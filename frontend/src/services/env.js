@@ -4,10 +4,11 @@ let backend;
 const currentHost = window.location.hostname;
 
 // dev = всё, что не прод
-if (!import.meta.env.PROD) {
-  backend = `http://${currentHost}:3000`;
+if (import.meta.env.PROD) {
+  backend = import.meta.env.VITE_BACKEND_URL;
 } else {
-  backend = "https://хуета.com";
+  backend = `http://${currentHost}:3000`;
 }
+
 
 export const backendUrl = (path = "") => backend + path;
