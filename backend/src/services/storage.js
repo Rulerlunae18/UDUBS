@@ -2,55 +2,66 @@
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const { createClient } = require("@supabase/supabase-js");
 
-// Загружаем env-переменные заранее
 require("dotenv").config();
 
 /* ============================================================
-   📁 ПУТЬ ДЛЯ ЗАГРУЗОК
+   🔥 SUPABASE ИНИЦИАЛИЗАЦИЯ
    ============================================================ */
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "uploads";
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-// Абсолютный путь (важно для Render!)
-const absoluteUploadPath = path.join(__dirname, "..", "..", UPLOAD_DIR);
+/* ============================================================
+   📁 ВРЕМЕННАЯ ПАПКА (ТОЛЬКО ДЛЯ Multer)
+   ============================================================ */
+const TEMP_DIR = path.resolve("temp_uploads");
 
-if (!fs.existsSync(absoluteUploadPath)) {
-  console.log("📁 Creating upload directory:", absoluteUploadPath);
-  fs.mkdirSync(absoluteUploadPath, { recursive: true });
+if (!fs.existsSync(TEMP_DIR)) {
+  console.log("📁 Creating temp directory:", TEMP_DIR);
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
 /* ============================================================
-   ⚙ Multer: Настройки хранения файлов
+   ⚙ Multer: временное сохранение файлов
    ============================================================ */
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, absoluteUploadPath);
-  },
+  destination: (_req, _file, cb) => cb(null, TEMP_DIR),
   filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, unique + ext);
+    const safe = Date.now() + "-" + file.originalname.replace(/[^\w.-]/g, "_");
+    cb(null, safe);
   }
 });
 
 const upload = multer({ storage });
 
 /* ============================================================
-   🌐 publicUrl — отдаёт корректный путь для фронта
+   ☁ Загрузка ФАЙЛА в SUPABASE STORAGE
    ============================================================ */
-function publicUrl(originalPath) {
-  if (!originalPath) return null;
+async function uploadToSupabase(localPath, fileName, mime) {
+  const fileBuffer = fs.readFileSync(localPath);
 
-  const file = path.basename(originalPath);
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(fileName, fileBuffer, {
+      contentType: mime,
+      upsert: true
+    });
 
-  // важно: всегда относительный путь
-  // чтобы Render / nginx / reverse proxy не ломали ссылки
-  return `/${UPLOAD_DIR}/${file}`;
+  if (error) throw error;
+
+  // Удаляем временный файл
+  fs.unlinkSync(localPath);
+
+  // Генерируем публичный URL
+  return supabase.storage
+    .from("uploads")
+    .getPublicUrl(fileName).data.publicUrl;
 }
 
 module.exports = {
-  UPLOAD_DIR,
-  absoluteUploadPath,
   upload,
-  publicUrl
+  uploadToSupabase
 };
