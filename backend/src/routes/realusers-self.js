@@ -1,0 +1,101 @@
+// backend/src/routes/realusers-self.js
+const express = require('express');
+const router = express.Router();
+
+const { authRequired } = require('../middleware/auth');
+const { upload } = require('../services/storage');
+const prisma = require('../utils/prisma');
+
+// ===========================================================
+// GET /api/realusers-self/me
+// Возвращает профиль текущего RealUser правильно
+// ===========================================================
+router.get('/me', authRequired, async (req, res) => {
+  try {
+    const u = req.user;
+
+    let real;
+
+    if (u.type === "real") {
+      // 🎮 ЛОГИНИТСЯ ИГРОК RENPY → искать по realUser.id
+      real = await prisma.realUser.findUnique({
+        where: { id: u.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          realRole: true,
+          avatarUrl: true,
+          is_online: true,
+          last_seen: true,
+          createdAt: true,
+          password: true,
+        },
+      });
+    } else {
+      // 👤 ЛОГИНИТСЯ system user → ищем зависимый realUser
+      real = await prisma.realUser.findFirst({
+        where: { userId: u.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          realRole: true,
+          avatarUrl: true,
+          is_online: true,
+          last_seen: true,
+          createdAt: true,
+          password: true,
+        },
+      });
+    }
+
+    if (!real) {
+      return res.status(404).json({ error: "RealUser not found" });
+    }
+
+    return res.json(real);
+  } catch (err) {
+    console.error("❌ GET /realusers-self/me error:", err);
+    return res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+// ===========================================================
+// PUT /api/realusers-self/me/avatar
+// ===========================================================
+router.put('/me/avatar', authRequired, upload.single('avatar'), async (req, res) => {
+  try {
+    const u = req.user;
+
+    let real;
+
+    if (u.type === "real") {
+      real = await prisma.realUser.findUnique({
+        where: { id: u.id },
+      });
+    } else {
+      real = await prisma.realUser.findFirst({
+        where: { userId: u.id },
+      });
+    }
+
+    if (!real) return res.status(404).json({ error: "RealUser not found" });
+    if (!req.file) return res.status(400).json({ error: "avatar file required" });
+
+    const updated = await prisma.realUser.update({
+      where: { id: real.id },
+      data: { avatarUrl: `/uploads/${req.file.filename}` },
+    });
+
+    return res.json({
+      ok: true,
+      avatarUrl: updated.avatarUrl,
+    });
+  } catch (err) {
+    console.error("❌ Avatar update error:", err);
+    return res.status(500).json({ error: "Failed to update avatar" });
+  }
+});
+
+module.exports = router;

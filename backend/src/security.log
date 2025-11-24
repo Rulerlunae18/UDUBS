@@ -1,0 +1,20 @@
+[2025-11-11T23:09:33.843Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/profiles/2","user":{"id":2,"role":"USER"},"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-11T23:09:36.491Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/profiles/2","user":{"id":2,"role":"USER"},"ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-20T02:10:33.692Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/auth/me","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}
+[2025-11-20T02:10:34.367Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/docs","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}
+[2025-11-20T02:10:34.388Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/fakeusers","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}
+[2025-11-20T02:26:06.185Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/auth/me","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}
+[2025-11-21T19:02:41.075Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/posts","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-21T21:50:21.204Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/posts","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-21T22:20:50.568Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/fakeusers/3","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-22T14:02:19.277Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/admin/profiles","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","user":null}
+[2025-11-22T14:02:41.639Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/admin/profiles","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","user":null}
+[2025-11-22T14:02:46.343Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/fakeusers/3","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-22T14:02:51.827Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/fakeusers/3","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-22T15:34:19.156Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/admin/profiles","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","user":null}
+[2025-11-22T15:34:28.018Z] ADMIN_GUARD_BLOCK {"ip":"::1","url":"/api/admin/profiles","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","user":null}
+[2025-11-22T15:34:38.271Z] ADMIN_GUARD_BLOCK {"ip":"::ffff:127.0.0.1","url":"/api/admin/profiles","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","user":null}
+[2025-11-22T15:34:40.603Z] AUTH_REQUIRED_FAIL {"ip":"::ffff:127.0.0.1","url":"/api/posts","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-22T16:28:46.606Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/fakeusers/1","ua":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"}
+[2025-11-22T16:41:55.856Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/realusers","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}
+[2025-11-22T16:42:04.198Z] AUTH_REQUIRED_FAIL {"ip":"::1","url":"/api/realusers","ua":"Mozilla/5.0 (Windows NT; Windows NT 10.0; uk-UA) WindowsPowerShell/5.1.26100.7019"}

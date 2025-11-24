@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ────────────────────────────────────────────── */
+/* Helix-09 CRT Terminal Theme                    */
+/* ────────────────────────────────────────────── */
+
+body {
+  @apply bg-helix-dark text-helix-green font-mono;
+  text-shadow: 0 0 4px #00ff99;
+  image-rendering: pixelated;
+}
+
+/* Glow buttons */
+button, .btn {
+  @apply border border-helix-green px-4 py-1 transition-colors;
+}
+button:hover, .btn:hover {
+  @apply bg-helix-green text-helix-dark shadow-glow;
+}
+
+/* Inputs */
+input, textarea {
+  @apply bg-transparent border border-helix-green text-helix-green w-full px-2 py-1;
+}
+input:focus, textarea:focus {
+  @apply outline-none shadow-glow;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: #00ff99; }
+
+/* CRT overlay */
+.crt::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,255,153,0.05) 0px,
+    rgba(0,255,153,0.05) 1px,
+    transparent 2px,
+    transparent 3px
+  );
+  animation: scan 6s linear infinite;
+  z-index: 0;
+}
+
+/* Flicker global */
+body {
+  animation: flicker 0.15s infinite;
+}
+
+/* Headings glow */
+h1,h2,h3 {
+  @apply text-helix-light drop-shadow-[0_0_8px_rgba(0,255,153,0.6)];
+}
