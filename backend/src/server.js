@@ -174,6 +174,7 @@ app.use(errorHandler);
 //   SOCKET.IO
 // ======================================================
 const server = http.createServer(app);
+const socketAllowedOrigins = allowedOrigins.map(o => o.trim());
 
 const io = new Server(server, {
   cors: {
