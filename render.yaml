@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: udubs-backend
+    rootDir: backend
+    env: node
+    region: frankfurt
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: RENPY_EVENT_TOKEN
+        sync: false
+
+  - type: web
+    name: udubs-frontend
+    rootDir: frontend
+    env: node
+    region: frankfurt
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://udubs-backend.onrender.com
