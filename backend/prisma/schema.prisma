@@ -101,8 +101,8 @@ model FakeUser {
 model Post {
   id           Int      @id @default(autoincrement())
   title        String
-  body         String   @db.LongText
-  coverImage   String?  @db.Text
+  body         String   
+  coverImage   String?  
   fileType     String?
   coverCaption String?
   stamp        String?
@@ -128,8 +128,8 @@ model View {
 
 model PostImage {
   id     Int    @id @default(autoincrement())
-  url    String  @db.Text
-  caption String? @db.Text
+  url    String 
+  caption String?
 
   postId Int
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
