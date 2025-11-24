@@ -8,10 +8,14 @@ import { io } from 'socket.io-client'
 // 🟢 Socket.io
 // ============================================================
 
-const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000', {
+const socket = io(import.meta.env.VITE_BACKEND_URL, {
+  transports: ['websocket', 'polling'],
+  secure: true,
   autoConnect: true,
   reconnection: true,
-})
+  withCredentials: true,
+});
+
 
 // ============================================================
 // 🔐 AUTH Store (JWT)
