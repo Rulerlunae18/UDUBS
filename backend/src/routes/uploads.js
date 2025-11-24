@@ -14,12 +14,6 @@ const supabase = createClient(
 
 const uploadRoot = path.resolve("temp_uploads");
 
-// гарантируем, что временная папка существует
-if (!fs.existsSync(uploadRoot)) {
-  fs.mkdirSync(uploadRoot, { recursive: true });
-}
-
-
 // гарантируем, что папка существует
 if (!fs.existsSync(uploadRoot)) {
   console.log("📁 Creating upload directory:", uploadRoot);
