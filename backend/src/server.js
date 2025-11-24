@@ -218,6 +218,9 @@ io.on("connection", (socket) => {
   });
 });
 
+const { runSeedOnce } = require("./utils/runSeedOnce");
+runSeedOnce();
+
 // ======================================================
 //   START SERVER
 // ======================================================
