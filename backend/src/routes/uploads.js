@@ -3,10 +3,22 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const config = require('../config/env');
+const { createClient } = require('@supabase/supabase-js');
 
 const router = express.Router();
 
-const uploadRoot = path.resolve(config.uploadDir || "uploads");
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const uploadRoot = path.resolve("temp_uploads");
+
+// гарантируем, что временная папка существует
+if (!fs.existsSync(uploadRoot)) {
+  fs.mkdirSync(uploadRoot, { recursive: true });
+}
+
 
 // гарантируем, что папка существует
 if (!fs.existsSync(uploadRoot)) {
@@ -38,17 +50,49 @@ const upload = multer({
 });
 
 // Загрузка файла
-router.post('/', upload.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+router.post('/', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-  const ext = path.extname(req.file.originalname).slice(1).toLowerCase();
+    const filePath = req.file.path;
+    const fileName = req.file.filename;
+    const ext = path.extname(req.file.originalname).slice(1).toLowerCase();
 
-  res.json({
-    path: `/uploads/${req.file.filename}`,
-    fileType: ext,
-    originalName: req.file.originalname,
-    size: req.file.size
-  });
+    // Читаем файл в буфер
+    const fileBuffer = fs.readFileSync(filePath);
+
+    // Загружаем в Supabase
+    const { data, error } = await supabase.storage
+      .from('uploads')                // ← твой bucket
+      .upload(fileName, fileBuffer, {
+        contentType: req.file.mimetype,
+        upsert: true
+      });
+
+    if (error) {
+      console.error("Supabase upload error:", error);
+      return res.status(500).json({ error: "Failed to upload to storage" });
+    }
+
+    // Получаем публичный URL
+    const publicUrl = supabase.storage
+      .from('uploads')
+      .getPublicUrl(fileName).data.publicUrl;
+
+    // Чистим локальный временный файл
+    fs.unlinkSync(filePath);
+
+    res.json({
+      url: publicUrl,       // ← ВАЖНО: теперь это URL на Supabase
+      fileType: ext,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Проверка API
