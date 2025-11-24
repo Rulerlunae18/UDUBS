@@ -177,8 +177,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: config.frontendOrigin || "http://localhost:5173",
+    origin: socketAllowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true
   },
 });
 
