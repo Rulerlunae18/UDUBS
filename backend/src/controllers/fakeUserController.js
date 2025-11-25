@@ -1,26 +1,10 @@
 // backend/src/controllers/fakeusers.js
-const path = require("path");
-const fs = require("fs");
-const multer = require("multer");
 const prisma = require("../utils/prisma");
+const { upload, uploadToSupabase } = require("../services/storage");
 
-// ------------------------------------------------------------
-//  Настройка Multer
-// ------------------------------------------------------------
-const uploadDir = path.resolve("uploads/fakeusers");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname),
-});
-
-const upload = multer({ storage });
-
-// ------------------------------------------------------------
-//  GET /fakeusers — список всех NPC (публично)
-// ------------------------------------------------------------
+/* ============================================================
+   GET /fakeusers — список всех NPC
+   ============================================================ */
 async function listFakeUsers(_req, res) {
   try {
     const users = await prisma.fakeUser.findMany({
@@ -35,9 +19,9 @@ async function listFakeUsers(_req, res) {
   }
 }
 
-// ------------------------------------------------------------
-//  GET /fakeusers/:id — получить одного исследователя
-// ------------------------------------------------------------
+/* ============================================================
+   GET /fakeusers/:id
+   ============================================================ */
 async function getFakeUser(req, res) {
   try {
     const id = Number(req.params.id);
@@ -57,9 +41,9 @@ async function getFakeUser(req, res) {
   }
 }
 
-// ------------------------------------------------------------
-//  GET /fakeusers/:id/posts — посты исследователя
-// ------------------------------------------------------------
+/* ============================================================
+   GET /fakeusers/:id/posts
+   ============================================================ */
 async function getFakeUserPosts(req, res) {
   try {
     const id = Number(req.params.id);
@@ -68,9 +52,7 @@ async function getFakeUserPosts(req, res) {
     const user = await prisma.fakeUser.findUnique({
       where: { id },
       include: {
-        posts: {
-          orderBy: { createdAt: "desc" },
-        },
+        posts: { orderBy: { createdAt: "desc" } },
       },
     });
 
@@ -83,21 +65,26 @@ async function getFakeUserPosts(req, res) {
   }
 }
 
-// ------------------------------------------------------------
-//  POST /fakeusers — создание NPC (ADMIN ONLY)
-// ------------------------------------------------------------
+/* ============================================================
+   POST /fakeusers — создать NPC (ADMIN ONLY)
+   ============================================================ */
 async function createFakeUser(req, res) {
   try {
-    // Авторизацию JWT мы проверяем в маршруте → req.user гарантированно есть
     if (req.user.role !== "ADMIN") {
       return res.status(403).json({ error: "Admin only" });
     }
 
     const { codename, rank, clearance, bio } = req.body;
 
-    const avatarUrl = req.file
-      ? `/uploads/fakeusers/${req.file.filename}`
-      : null;
+    let avatarUrl = null;
+
+    if (req.file) {
+      avatarUrl = await uploadToSupabase(
+        req.file.path,
+        req.file.filename,
+        req.file.mimetype
+      );
+    }
 
     const created = await prisma.fakeUser.create({
       data: {
@@ -106,7 +93,7 @@ async function createFakeUser(req, res) {
         clearance,
         bio,
         avatarUrl,
-        userId: null, // NPC не привязан к реальным пользователям
+        userId: null,
       },
     });
 
@@ -117,9 +104,9 @@ async function createFakeUser(req, res) {
   }
 }
 
-// ------------------------------------------------------------
-//  PUT /fakeusers/:id — обновление NPC (ADMIN ONLY)
-// ------------------------------------------------------------
+/* ============================================================
+   PUT /fakeusers/:id — обновить NPC (ADMIN ONLY)
+   ============================================================ */
 async function updateFakeUser(req, res) {
   try {
     if (req.user.role !== "ADMIN") {
@@ -131,20 +118,16 @@ async function updateFakeUser(req, res) {
 
     const { codename, rank, clearance, bio } = req.body;
 
-    // Если загружен файл — заменить avatarUrl
-    const avatarUrl = req.file
-      ? `/uploads/fakeusers/${req.file.filename}`
-      : undefined;
+    const data = { codename, rank, clearance, bio };
 
-    const data = {
-      codename,
-      rank,
-      clearance,
-      bio,
-    };
-
-    // avatarUrl добавляем ТОЛЬКО если файл есть
-    if (avatarUrl) data.avatarUrl = avatarUrl;
+    if (req.file) {
+      const avatarUrl = await uploadToSupabase(
+        req.file.path,
+        req.file.filename,
+        req.file.mimetype
+      );
+      data.avatarUrl = avatarUrl;
+    }
 
     const updated = await prisma.fakeUser.update({
       where: { id },
@@ -159,10 +142,9 @@ async function updateFakeUser(req, res) {
   }
 }
 
-
-// ------------------------------------------------------------
-//  DELETE /fakeusers/:id — удалить NPC (ADMIN ONLY)
-// ------------------------------------------------------------
+/* ============================================================
+   DELETE /fakeusers/:id
+   ============================================================ */
 async function deleteFakeUser(req, res) {
   try {
     const id = Number(req.params.id);
@@ -171,7 +153,6 @@ async function deleteFakeUser(req, res) {
     const user = await prisma.fakeUser.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: "Not found" });
 
-    // защита — запрещено удалять slot для RealUser
     if (user.userId) {
       return res
         .status(400)
