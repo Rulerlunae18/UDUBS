@@ -67,6 +67,7 @@ const uploadsRoutes = require('./routes/uploads');
 const speedtestRoutes = require('./routes/speedtest');
 const fakeUsersRoutes = require('./routes/fakeusers');
 const renpyRoutes = require('./routes/renpy-events');
+console.log("RENRY ROUTES =", renpyRoutes);
 const adminPlayerRoutes = require('./routes/admin-players');
 const realUsersRoutes = require('./routes/real-users');
 const realUsersSelfRoutes = require('./routes/realusers-self');
