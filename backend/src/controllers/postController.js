@@ -187,6 +187,24 @@ async function createPost(req, res) {
   }
 }
 
+async function deletePost(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== "ADMIN") {
+      return res.status(403).json({ error: "Admin only" });
+    }
+
+    const id = Number(req.params.id);
+    await prisma.post.delete({ where: { id } });
+
+    res.json({ message: "Post deleted" });
+  } catch (err) {
+    console.error("❌ deletePost error:", err);
+    res.status(500).json({ error: "Failed to delete post" });
+  }
+}
+
+
 /* ------------------------------------------------------------
    PUT /posts/:id  (ADMIN)
 ------------------------------------------------------------ */
