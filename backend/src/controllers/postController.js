@@ -153,6 +153,43 @@ async function listArchive(_req, res) {
 // ------------------------------------------------------------
 // POST /posts  (ADMIN)
 // ------------------------------------------------------------
+// ============================================================
+//   UPLOAD → Supabase
+// ============================================================
+const { createClient } = require("@supabase/supabase-js");
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+// вспомогательная функция
+async function uploadToSupabase(file) {
+  const fileName = `${Date.now()}-${file.originalname.replace(/[^\w.-]/g, "_")}`;
+
+  const { data, error } = await supabase.storage
+    .from("uploads")
+    .upload(fileName, file.buffer, {
+      contentType: file.mimetype,
+      upsert: true
+    });
+
+  if (error) {
+    console.error("Supabase upload error:", error);
+    throw new Error("Failed to upload file to storage");
+  }
+
+  // публичный URL
+  const publicUrl = supabase.storage
+    .from("uploads")
+    .getPublicUrl(fileName).data.publicUrl;
+
+  return { publicUrl, fileName };
+}
+
+
+// ============================================================
+//   CREATE POST
+// ============================================================
 async function createPost(req, res) {
   try {
     const user = req.user;
@@ -161,15 +198,25 @@ async function createPost(req, res) {
     }
 
     const { title, body, coverCaption, stamp, clearance, fakeAuthorId } = req.body;
+
     if (!title || !body)
       return res.status(400).json({ error: "title and body required" });
 
+    // --------------------------------------------------------
+    // 1) Загружаем обложку (если она есть)
+    // --------------------------------------------------------
     let coverImage = null;
+    let fileType = null;
+
     if (req.file) {
-      const upload = await uploadToSupabase(req.file.path, req.file.mimetype);
-      coverImage = upload.publicUrl;
+      const uploaded = await uploadToSupabase(req.file);
+      coverImage = uploaded.publicUrl;
+      fileType = req.file.mimetype;
     }
 
+    // --------------------------------------------------------
+    // 2) Создаём пост
+    // --------------------------------------------------------
     const created = await prisma.post.create({
       data: {
         title,
@@ -179,7 +226,7 @@ async function createPost(req, res) {
         stamp: stamp || null,
         clearance: clearance || null,
         fakeAuthorId: fakeAuthorId ? Number(fakeAuthorId) : null,
-        fileType: req.file?.mimetype || null
+        fileType
       },
       include: { fakeAuthor: true }
     });
@@ -188,6 +235,7 @@ async function createPost(req, res) {
       ...created,
       author: created.fakeAuthor
     });
+
   } catch (err) {
     console.error("❌ createPost error:", err);
     res.status(500).json({ error: "Failed to create post" });
