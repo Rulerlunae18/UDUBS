@@ -11,4 +11,12 @@ if (import.meta.env.PROD) {
 }
 
 
-export const backendUrl = (path = "") => backend + path;
+export const backendUrl = (path = "") => {
+  if (!path) return backend;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    // внешний URL — НЕ добавляем backend
+    return path;
+  }
+  return backend + path;
+};
+
