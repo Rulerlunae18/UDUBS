@@ -201,7 +201,10 @@ async function fakeRegister(req, res) {
   const { email } = req.body || {};
   let fileUrl = null;
 
-  if (req.file) fileUrl = `/uploads/${req.file.filename}`;
+  // 🔥 Новый способ: URL получает upload.js → req.file.supabaseUrl
+  if (req.file && req.file.supabaseUrl) {
+    fileUrl = req.file.supabaseUrl;
+  }
 
   if (email) {
     await prisma.fakeApplication.create({
