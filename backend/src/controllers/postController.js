@@ -1,6 +1,5 @@
 // backend/src/controllers/posts.js
 const prisma = require("../utils/prisma");
-const { uploadToSupabase } = require("../services/storage");
 
 // ------------------------------------------------------------
 // Helpers
