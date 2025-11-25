@@ -1,9 +1,10 @@
 // backend/src/controllers/posts.js
 const prisma = require("../utils/prisma");
+const { uploadToSupabase } = require("../services/storage");
 
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   Helpers
+------------------------------------------------------------ */
 function formatPlaytime(seconds = 0) {
   const totalMinutes = Math.floor(seconds / 60);
   if (totalMinutes <= 0) return "меньше часа в системе";
@@ -37,9 +38,9 @@ ${stats.safe_mode ? "SAFE-режим включён." : "SAFE-режим отк�
   `.trim();
 }
 
-// ------------------------------------------------------------
-// GET /posts
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   GET /posts
+------------------------------------------------------------ */
 async function listPosts(_req, res) {
   try {
     const posts = await prisma.post.findMany({
@@ -50,11 +51,7 @@ async function listPosts(_req, res) {
     const withViews = await Promise.all(
       posts.map(async (p) => {
         const count = await prisma.view.count({ where: { postId: p.id } });
-        return {
-          ...p,
-          viewsCount: count,
-          author: p.fakeAuthor
-        };
+        return { ...p, viewsCount: count, author: p.fakeAuthor };
       })
     );
 
@@ -65,9 +62,9 @@ async function listPosts(_req, res) {
   }
 }
 
-// ------------------------------------------------------------
-// GET /posts/:id
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   GET /posts/:id
+------------------------------------------------------------ */
 async function getPost(req, res) {
   try {
     const postId = Number(req.params.id);
@@ -84,14 +81,14 @@ async function getPost(req, res) {
 
     const user = req.user;
 
-    if (!user) {
-      return res.json({ ...post, author: post.fakeAuthor, viewsCount });
-    }
+    // анонимный
+    if (!user) return res.json({ ...post, author: post.fakeAuthor, viewsCount });
 
-    if (user.type === "system" && user.role === "ADMIN") {
+    // admin
+    if (user.type === "system" && user.role === "ADMIN")
       return res.json({ ...post, author: post.fakeAuthor, viewsCount });
-    }
 
+    // real user → подмена автора
     if (user.type === "real") {
       const real = user.realUser;
       const systemUserId = real.userId;
@@ -128,9 +125,9 @@ async function getPost(req, res) {
   }
 }
 
-// ------------------------------------------------------------
-// GET /posts/archive
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   GET /posts/archive
+------------------------------------------------------------ */
 async function listArchive(_req, res) {
   try {
     const posts = await prisma.post.findMany({
@@ -139,83 +136,35 @@ async function listArchive(_req, res) {
       include: { fakeAuthor: true }
     });
 
-    res.json(posts.map((p) => ({
-      ...p,
-      author: p.fakeAuthor
-    })));
+    res.json(posts.map((p) => ({ ...p, author: p.fakeAuthor })));
   } catch (err) {
     console.error("❌ listArchive error:", err);
     res.status(500).json({ error: "Failed to load archive" });
   }
 }
 
-// ------------------------------------------------------------
-// POST /posts  (ADMIN)
-// ------------------------------------------------------------
-// ============================================================
-//   UPLOAD → Supabase
-// ============================================================
-const { createClient } = require("@supabase/supabase-js");
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
-// вспомогательная функция
-async function uploadToSupabase(file) {
-  const fileName = `${Date.now()}-${file.originalname.replace(/[^\w.-]/g, "_")}`;
-
-  const { data, error } = await supabase.storage
-    .from("uploads")
-    .upload(fileName, file.buffer, {
-      contentType: file.mimetype,
-      upsert: true
-    });
-
-  if (error) {
-    console.error("Supabase upload error:", error);
-    throw new Error("Failed to upload file to storage");
-  }
-
-  // публичный URL
-  const publicUrl = supabase.storage
-    .from("uploads")
-    .getPublicUrl(fileName).data.publicUrl;
-
-  return { publicUrl, fileName };
-}
-
-
-// ============================================================
-//   CREATE POST
-// ============================================================
+/* ------------------------------------------------------------
+   POST /posts  (ADMIN)
+------------------------------------------------------------ */
 async function createPost(req, res) {
   try {
-    const user = req.user;
-    if (user.role !== "ADMIN") {
+    if (req.user.role !== "ADMIN")
       return res.status(403).json({ error: "Admin only" });
-    }
 
     const { title, body, coverCaption, stamp, clearance, fakeAuthorId } = req.body;
-
     if (!title || !body)
       return res.status(400).json({ error: "title and body required" });
 
-    // --------------------------------------------------------
-    // 1) Загружаем обложку (если она есть)
-    // --------------------------------------------------------
     let coverImage = null;
     let fileType = null;
 
+    // 🔥 правильная загрузка файла → Supabase
     if (req.file) {
-      const uploaded = await uploadToSupabase(req.file);
-      coverImage = uploaded.publicUrl;
+      const safeName = `${Date.now()}-${req.file.originalname.replace(/[^\w.-]/g, "_")}`;
+      coverImage = await uploadToSupabase(req.file.path, safeName, req.file.mimetype);
       fileType = req.file.mimetype;
     }
 
-    // --------------------------------------------------------
-    // 2) Создаём пост
-    // --------------------------------------------------------
     const created = await prisma.post.create({
       data: {
         title,
@@ -230,10 +179,7 @@ async function createPost(req, res) {
       include: { fakeAuthor: true }
     });
 
-    res.status(201).json({
-      ...created,
-      author: created.fakeAuthor
-    });
+    res.status(201).json({ ...created, author: created.fakeAuthor });
 
   } catch (err) {
     console.error("❌ createPost error:", err);
@@ -241,15 +187,13 @@ async function createPost(req, res) {
   }
 }
 
-// ------------------------------------------------------------
-// PUT /posts/:id  (ADMIN)
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   PUT /posts/:id  (ADMIN)
+------------------------------------------------------------ */
 async function updatePost(req, res) {
   try {
-    const user = req.user;
-    if (user.role !== "ADMIN") {
+    if (req.user.role !== "ADMIN")
       return res.status(403).json({ error: "Admin only" });
-    }
 
     const id = Number(req.params.id);
     const exists = await prisma.post.findUnique({ where: { id } });
@@ -259,9 +203,10 @@ async function updatePost(req, res) {
 
     let coverImage = exists.coverImage;
 
+    // 🔥 если загружен новый файл → перезаливаем
     if (req.file) {
-      const upload = await uploadToSupabase(req.file.path, req.file.mimetype);
-      coverImage = upload.publicUrl;
+      const safeName = `${Date.now()}-${req.file.originalname.replace(/[^\w.-]/g, "_")}`;
+      coverImage = await uploadToSupabase(req.file.path, safeName, req.file.mimetype);
     }
 
     const updated = await prisma.post.update({
@@ -278,39 +223,17 @@ async function updatePost(req, res) {
       include: { fakeAuthor: true }
     });
 
-    res.json({
-      ...updated,
-      author: updated.fakeAuthor
-    });
+    res.json({ ...updated, author: updated.fakeAuthor });
+
   } catch (err) {
     console.error("❌ updatePost error:", err);
     res.status(500).json({ error: "Failed to update post" });
   }
 }
 
-// ------------------------------------------------------------
-// DELETE /posts/:id  (ADMIN)
-// ------------------------------------------------------------
-async function deletePost(req, res) {
-  try {
-    const user = req.user;
-    if (user.role !== "ADMIN") {
-      return res.status(403).json({ error: "Admin only" });
-    }
-
-    const id = Number(req.params.id);
-    await prisma.post.delete({ where: { id } });
-
-    res.json({ message: "Post deleted" });
-  } catch (err) {
-    console.error("❌ deletePost error:", err);
-    res.status(500).json({ error: "Failed to delete post" });
-  }
-}
-
-// ------------------------------------------------------------
-// POST /posts/:id/view
-// ------------------------------------------------------------
+/* ------------------------------------------------------------
+   POST /posts/:id/view
+------------------------------------------------------------ */
 async function addView(req, res) {
   try {
     const id = Number(req.params.id);
