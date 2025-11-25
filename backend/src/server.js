@@ -25,6 +25,10 @@ const allowedOrigins = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(",")
   : ["http://localhost:5173"];
 
+const supabaseImgHost = process.env.SUPABASE_URL
+  ? new URL(process.env.SUPABASE_URL).origin
+  : null;
+
 console.log("Allowed origins:", allowedOrigins);
 
 // Telegram security logging
@@ -84,7 +88,12 @@ app.use(
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'"],
         "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:", "blob:"],
+        "img-src": [
+          "'self'",
+          "data:",
+          "blob:",
+          ...(supabaseImgHost ? [supabaseImgHost] : [])
+        ],
         "connect-src": ["'self'", ...allowedOrigins],
         "frame-ancestors": ["'none'"],
       },
@@ -124,34 +133,10 @@ app.use((req, res, next) => {
 });
 
 // ======================================================
-//   UPLOADS + HONEYPOT
-// ======================================================
-app.use(
-  "/uploads",
-  helmet.crossOriginResourcePolicy({ policy: "cross-origin" }),
-  express.static(path.join(__dirname, "../uploads"), {
-    index: false,
-    setHeaders: (res, filePath) => {
-      const ext = path.extname(filePath);
-      if ([".html", ".js", ".php", ".sh", ".exe"].includes(ext)) {
-        logSecurity(`🚫 Blocked dangerous download: ${path.basename(filePath)}`);
-        res.setHeader("X-Content-Type-Options", "nosniff");
-      }
-    },
-  })
-);
-
-app.get("/uploads/admin_panel_access.php", (req, res) => {
-  logSecurity("🕷 Honeypot triggered", req);
-  return res.status(403).json({ error: "honeypot" });
-});
-
-// ======================================================
 //   ROUTES
 // ======================================================
 
 app.use("/api/uploads", uploadsRoutes);
-app.use('/uploads', express.static(path.resolve(config.uploadDir)));
 app.use("/api/auth", authRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/views", viewRoutes);
