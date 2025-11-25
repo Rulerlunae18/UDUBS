@@ -84,9 +84,7 @@ app.set('trust proxy', 1);
 //   SPECIAL EXCEPTION FOR RENPY TRAFFIC (CSP BYPASS)
 // ======================================================
 app.use((req, res, next) => {
-  // Ren'Py → Python → no browser → no Origin → CSP ломается
   if (req.originalUrl.startsWith("/api/renpy/event")) {
-    // Снимаем CSP только для Ren’Py endpoint
     res.removeHeader("Content-Security-Policy");
   }
   next();
@@ -103,27 +101,15 @@ app.use(
         "default-src": ["'self'"],
         "script-src": ["'self'", "'unsafe-inline'"],
         "style-src": ["'self'", "'unsafe-inline'"],
-
-        // 🔥 Разрешаем загрузки картинок с Supabase
-        "img-src": [
-          "'self'",
-          "data:",
-          "blob:",
-          ...(supabaseImgHost ? [supabaseImgHost] : []),
-        ],
-
-        // ⬅️ ВАЖНО: разрешить любые подключения для RenPy + сокеты + запросы
+        "img-src": [ "'self'", "data:", "blob:", ...(supabaseImgHost ? [supabaseImgHost] : []) ],
         "connect-src": [
           "'self'",
           ...allowedOrigins,
-          "*", // ← FIX: разрешает запросы Python (RenPy)
+          "*", // 🔥 разрешаем Python (RenPy)
         ],
-
         "frame-ancestors": ["'none'"],
       },
     },
-
-    // Нужно для Supabase + изображений
     crossOriginEmbedderPolicy: false,
   })
 );
