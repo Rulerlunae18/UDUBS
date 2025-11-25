@@ -1,3 +1,5 @@
+console.log("🔥 renpy-events.js LOADED");
+
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/prisma");
