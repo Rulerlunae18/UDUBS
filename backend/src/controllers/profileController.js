@@ -1,12 +1,9 @@
 // backend/src/controllers/profileController.js
 const prisma = require("../utils/prisma");
-const { publicUrl } = require("../services/storage");
+const { uploadToSupabase } = require("../services/storage");
 
 /* ============================================================
    📌 Получить профиль User
-   Доступ:
-   - ADMIN — любой профиль
-   - USER — только свой
    ============================================================ */
 async function getProfile(req, res) {
   try {
@@ -32,6 +29,7 @@ async function getProfile(req, res) {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     res.json(user);
+
   } catch (err) {
     console.error("getProfile error:", err);
     res.status(500).json({ error: "Failed to load profile" });
@@ -39,10 +37,7 @@ async function getProfile(req, res) {
 }
 
 /* ============================================================
-   📌 Обновить профиль User + Синхронизировать FakeUser
-   Доступ:
-   - ADMIN — может редактировать любые профили
-   - USER — только свой
+   📌 Обновить профиль User + синхронизация FakeUser
    ============================================================ */
 async function updateProfile(req, res) {
   try {
@@ -61,12 +56,22 @@ async function updateProfile(req, res) {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // ------------------------------------------------------------
+    // 🔥 Новый Supabase avatarUrl
+    // ------------------------------------------------------------
     let avatarUrl = user.avatarUrl;
-    if (req.file) avatarUrl = publicUrl(req.file.path);
 
-    // =====================================================
-    // 🔹 USER → может менять ТОЛЬКО АВАТАРКУ
-    // =====================================================
+    if (req.file) {
+      avatarUrl = await uploadToSupabase(
+        req.file.path,
+        req.file.filename,
+        req.file.mimetype
+      );
+    }
+
+    // ------------------------------------------------------------
+    // 🟦 USER → может менять ТОЛЬКО аватар
+    // ------------------------------------------------------------
     if (req.user.role !== "ADMIN") {
       const updatedUser = await prisma.user.update({
         where: { id },
@@ -79,15 +84,15 @@ async function updateProfile(req, res) {
       });
     }
 
-    // =====================================================
-    // 🔹 ADMIN → может менять ВСЁ
-    // =====================================================
+    // ------------------------------------------------------------
+    // 🟥 ADMIN → может менять ВСЁ
+    // ------------------------------------------------------------
     const updatedUser = await prisma.user.update({
       where: { id },
       data: { name, title, bio, avatarUrl },
     });
 
-    // Обновляем связанные FakeUser (только у Admin)
+    // синхронизируем FakeUser
     await prisma.fakeUser.updateMany({
       where: { userId: id },
       data: {
@@ -110,8 +115,7 @@ async function updateProfile(req, res) {
 }
 
 /* ============================================================
-   📌 Получить всех пользователей
-   Доступ: ADMIN
+   📌 Получить всех пользователей (ADMIN)
    ============================================================ */
 async function listUsers(req, res) {
   try {
@@ -128,6 +132,7 @@ async function listUsers(req, res) {
     });
 
     res.json(users);
+
   } catch (err) {
     console.error("listUsers error:", err);
     res.status(500).json({ error: "Failed to load users" });
@@ -135,8 +140,7 @@ async function listUsers(req, res) {
 }
 
 /* ============================================================
-   📌 Удалить пользователя целиком (опасная операция)
-   Доступ: ADMIN
+   📌 Удалить пользователя целиком
    ============================================================ */
 async function deleteUser(req, res) {
   try {
@@ -151,6 +155,7 @@ async function deleteUser(req, res) {
     await prisma.user.delete({ where: { id } });
 
     res.json({ success: true });
+
   } catch (err) {
     console.error("deleteUser error:", err);
     res.status(500).json({ error: "Failed to delete user" });
