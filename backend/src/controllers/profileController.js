@@ -62,11 +62,7 @@ async function updateProfile(req, res) {
     let avatarUrl = user.avatarUrl;
 
     if (req.file) {
-      avatarUrl = await uploadToSupabase(
-        req.file.path,
-        req.file.filename,
-        req.file.mimetype
-      );
+      avatarUrl = await uploadToSupabase(req.file);
     }
 
     // ------------------------------------------------------------
