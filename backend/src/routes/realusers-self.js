@@ -67,6 +67,8 @@ router.get('/me', authRequired, async (req, res) => {
    Загрузка аватарки в Supabase
    ============================================================ */
 router.put('/me/avatar', authRequired, upload.single('avatar'), async (req, res) => {
+   console.log("FILE FOR REAL USER >>>", req.file);
+   console.log("BODY >>>", req.body);
   try {
     const u = req.user;
 
