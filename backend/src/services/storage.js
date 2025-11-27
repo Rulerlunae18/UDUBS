@@ -25,43 +25,51 @@ const upload = multer({
    Работает в двух форматах:
    1) uploadToSupabase(req.file)
    2) uploadToSupabase(path, filename, mimetype)
-   ============================================================ */
-async function uploadToSupabase(file, filename = null, mimetype = null) {
+   ============================================================ */async function uploadToSupabase(file, filename = null, mimetype = null) {
+  // Если ничего не передали → считаем что аватар не загружается сейчас
+  if (!file && !filename) {
+    console.warn("uploadToSupabase: no file provided — skipping upload");
+    return null; // ⬅ вместо throw!
+  }
+
   let fileName, buffer, type;
 
-  // 🟢 РЕЖИМ 1 — Multer (req.file)
+  /* ============================================================
+     MODE 1 — MemoryStorage (req.file)
+  ============================================================ */
   if (file?.buffer) {
     fileName = `${Date.now()}-${file.originalname.replace(/[^\w.-]/g, "_")}`;
     buffer = file.buffer;
     type = file.mimetype;
   }
 
-  // 🟡 РЕЖИМ 2 — вручную: (path + filename + mimetype)
+  /* ============================================================
+     MODE 2 — old format: path + filename + mimetype
+  ============================================================ */
   else if (typeof file === "string" && filename && mimetype) {
+    const fs = require("fs");
     buffer = fs.readFileSync(file);
     fileName = `${Date.now()}-${filename.replace(/[^\w.-]/g, "_")}`;
     type = mimetype;
   }
 
-  // 🔴 Ошибка — неправильные аргументы
   else {
-    throw new Error("uploadToSupabase: invalid input — send req.file OR path+filename+mimetype");
+    console.warn("uploadToSupabase: unexpected arguments — skipping upload");
+    return null; // ⬅ вместо throw!
   }
 
-  /* === ЗАГРУЗКА В SUPABASE === */
+  /* ============================================================
+     Upload to Supabase
+  ============================================================ */
   const { error } = await supabase.storage
     .from("uploads")
-    .upload(fileName, buffer, {
-      upsert: true,
-      contentType: type,
-    });
+    .upload(fileName, buffer, { upsert: true, contentType: type });
 
   if (error) {
     console.error("Supabase upload error:", error);
-    throw new Error("Failed to upload file to Supabase");
+    return null; // ⬅ теперь backend не упадёт
   }
 
   return supabase.storage.from("uploads").getPublicUrl(fileName).data.publicUrl;
 }
-
 module.exports = { upload, uploadToSupabase };
