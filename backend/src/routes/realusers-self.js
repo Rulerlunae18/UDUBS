@@ -86,7 +86,11 @@ router.put('/me/avatar', authRequired, upload.single('avatar'), async (req, res)
     if (!req.file) return res.status(400).json({ error: "avatar file required" });
 
     // === Загружаем файл в Supabase ===
-    const avatarUrl = await uploadToSupabase(req.file);
+    const avatarUrl = await uploadToSupabase(
+      req.file.path,
+      req.file.filename,
+      req.file.mimetype
+    );
 
     if (!avatarUrl) {
       return res.status(500).json({ error: "Supabase upload failed" });
