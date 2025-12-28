@@ -157,7 +157,8 @@ import { backendUrl } from '../services/env'
 
 const auth = inject('auth', { user: { role: 'USER' } })
 const isAdmin = computed(() => auth.user?.role === 'ADMIN')
-
+const totalPlayers = computed(() => profiles.value.length)
+  
 const profiles = ref([])
 const loading = ref(true)
 const selected = ref(null)
