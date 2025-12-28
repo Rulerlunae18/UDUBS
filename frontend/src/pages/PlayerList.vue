@@ -41,6 +41,11 @@
           </span>
         </div>
 
+        <div class="text-right text-xs text-green-300 opacity-70 space-y-1">
+          <div>👤 Всего игроков: {{ totalPlayers }}</div>
+          <div>Последнее обновление: {{ formatDate(lastRefresh) }}</div>
+        </div>
+
         <div v-if="loading" class="text-center opacity-60 py-10 text-green-300 animate-pulse">
           ЗАГРУЗКА ДАННЫХ ИГРОКА...
         </div>
