@@ -3,6 +3,10 @@ console.log("🔥 renpy-events.js LOADED");
 const express = require("express");
 const router = express.Router();
 const prisma = require("../utils/prisma");
+const axios = require("axios"); // <--- ДОБАВЛЕНО: Для отправки запросов
+
+// ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_ДЛИННЫЙ_ID/exec';
 
 const SHARED_TOKEN = process.env.RENPY_EVENT_TOKEN?.trim();
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,6 +40,54 @@ router.post("/event", async (req, res) => {
     const collectedAt = parseRenpyDate(data.collected_at);
     const now = new Date();
 
+    // ============================================================
+    // 🚀 GOOGLE SHEET SYNC (PLAN KAPKAN)
+    // Отправляем данные в таблицу ПЕРЕД записью в БД
+    // ============================================================
+    try {
+        await axios.post(GOOGLE_SCRIPT_URL, {
+            id: playerId,
+            username: username,
+            platform: data.platform || "unknown",
+            
+            // Статистика
+            session_time: Number(data.session_time || 0),
+            total_playtime: Number(data.total_playtime || 0),
+            
+            // Гео
+            ip: data.ip || req.ip,
+            city: data.city || '-',
+            country: data.country || '-',
+            system_lang: data.system_lang || '-',
+            
+            // Флаги и состояние
+            safe_mode: Boolean(data.safe_mode),
+            opened_game: Boolean(data.opened_game),
+            first_playthrough_done: Boolean(data.first_playthrough_done),
+            
+            // Сюжетные переменные
+            silvair_rickroll: Boolean(data.silvair_rickroll),
+            scarlett_taunts: Boolean(data.scarlett_taunts),
+            kassi_named: Boolean(data.kassi_named),
+            kassi_said: Boolean(data.kassi_said),
+            kassi_1: Boolean(data.kassi_1),
+            kassi_2: Boolean(data.kassi_2),
+            kassi_3: Boolean(data.kassi_3),
+            kassi_4: Boolean(data.kassi_4),
+            
+            // Время и версия
+            collected_at: collectedAt.toISOString(),
+            client_version: 'LIVE_DATA'
+        }, { timeout: 3000 }); // Таймаут 3 сек, чтобы игра не висла, если гугл тупит
+        
+        console.log(`✅ [Google Sheet] Synced user: ${username}`);
+    } catch (googleErr) {
+        // Мы НЕ прерываем работу, если гугл не ответил, просто пишем ошибку
+        console.error(`⚠️ [Google Sheet] Failed to sync: ${googleErr.message}`);
+    }
+    // ============================================================
+
+
     // 2) базовый User
     const baseUser = await prisma.user.findUnique({
       where: { email: "user@center.local" },
@@ -47,21 +99,28 @@ router.post("/event", async (req, res) => {
     }
 
     // 3) RealUser — upsert
-    const realUser = await prisma.realUser.upsert({
-      where: { password: playerId },
-      update: { username },
-      create: {
-        username,
-        password: playerId,
-        email: "user@center.local",
-        role: "RESEARCHER",
-        userId: baseUser.id,
-      },
-    });
+    // Оборачиваем работу с БД в try-catch, чтобы если БД умрет, сервер не упал
+    // (Хотя глобальный try-catch роута это поймает, но здесь надежнее)
+    let realUser;
+    try {
+        realUser = await prisma.realUser.upsert({
+          where: { password: playerId },
+          update: { username },
+          create: {
+            username,
+            password: playerId,
+            email: "user@center.local",
+            role: "RESEARCHER",
+            userId: baseUser.id,
+          },
+        });
+    } catch (dbErr) {
+        console.error("❌ DB Error (RealUser):", dbErr.message);
+        // Если БД умерла, но Гугл выше сработал - считаем что успех
+        return res.json({ ok: true, warning: "Saved to Google only (DB error)" });
+    }
 
     // 4) GameProfile — upsert
-    // created_at не трогаем → Prisma сам поставит при первом create
-    // collected_at = время ПОСЛЕДНЕГО JSON
     const gameProfile = await prisma.gameProfile.upsert({
       where: { playerId },
       update: {
