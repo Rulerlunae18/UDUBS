@@ -1,5 +1,5 @@
 // ======================================================
-//   ARG-Portal Backend — JWT SECURITY EDITION
+//   ARG-Portal Backend — JWT SECURITY EDITION (MODIFIED FOR MIGRATION)
 // ======================================================
 
 console.log("CURRENT DIR:", __dirname);
@@ -15,6 +15,50 @@ const http = require('http');
 const fetch = require("node-fetch");
 const { Server } = require('socket.io');
 const prisma = require('./utils/prisma');
+
+// --- [MIGRATION TOOL] ---
+const axios = require('axios');
+// ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ОТ GOOGLE APPS SCRIPT (которая заканчивается на /exec)
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyA8bnRDh5h_Ok_xRBjqXplqZAP6VHZFvC8N8HdeT44JFeQFMcz3b1kowtGk6oV074Raw/exec'; 
+
+// Функция отправки (используем её для миграции и можно экспортировать для новых сохранений)
+async function sendToGoogleSheet(profile) {
+  const payload = {
+    // Маппинг полей Prisma -> Google Sheet
+    id: profile.playerId || profile.id, // playerId - это уникальный ID игрока
+    username: profile.username,
+    platform: profile.platform,
+    session_time: profile.session_time,
+    total_playtime: profile.total_playtime,
+    ip: profile.ip,
+    city: profile.city,
+    country: profile.country,
+    system_lang: profile.system_lang,
+    safe_mode: profile.safe_mode,
+    opened_game: profile.opened_game,
+    first_playthrough_done: profile.first_playthrough_done,
+    silvair_rickroll: profile.silvair_rickroll,
+    scarlett_taunts: profile.scarlett_taunts,
+    kassi_named: profile.kassi_named,
+    kassi_said: profile.kassi_said,
+    kassi_1: profile.kassi_1,
+    kassi_2: profile.kassi_2,
+    kassi_3: profile.kassi_3,
+    kassi_4: profile.kassi_4,
+    collected_at: profile.collected_at ? new Date(profile.collected_at).toISOString() : new Date().toISOString(),
+    client_version: 'MIGRATION_EXPORT'
+  };
+
+  try {
+    await axios.post(GOOGLE_SCRIPT_URL, payload, { maxRedirects: 5 });
+    console.log(`✅ Google Sheet: Exported user ${payload.username}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Google Sheet Error for ${payload.username}:`, err.message);
+    return false;
+  }
+}
+// --- [END MIGRATION TOOL] ---
 
 const config = require('./config/env');
 const { attachUser } = require('./middleware/auth');
@@ -76,6 +120,8 @@ const tgRoutes = require('./routes/tg');
 const app = express();
 
 app.set('trust proxy', 1);
+// Делаем функцию доступной глобально, если понадобится в роутах
+app.locals.sendToGoogleSheet = sendToGoogleSheet; 
 
 // ======================================================
 //   GLOBAL SECURITY & BASE MIDDLEWARE
@@ -161,8 +207,35 @@ app.use("/api/archive", archiveRoutes);
 app.use("/api/renpy", renpyRoutes);
 app.use("/api/realusers", realUsersRoutes);
 app.use("/api/realusers-self", realUsersSelfRoutes);
-app.use("/api/admin", adminPlayerRoutes); // adminOnly стоит в самом роуте
+app.use("/api/admin", adminPlayerRoutes); 
 app.use("/api/tg", tgRoutes);
+
+// --- [MIGRATION ROUTE START] ---
+// Секретный роут для спасения данных
+app.get('/api/emergency-migration-start', async (req, res) => {
+    console.log("🚀 STARTING EMERGENCY DATABASE DUMP TO GOOGLE SHEETS...");
+    res.write("Starting migration...\n");
+    
+    try {
+        const allProfiles = await prisma.gameProfile.findMany();
+        res.write(`Found ${allProfiles.length} profiles to migrate.\n`);
+
+        for (const [i, profile] of allProfiles.entries()) {
+             await sendToGoogleSheet(profile);
+             // Пауза 300мс чтобы не убить Google API
+             await new Promise(r => setTimeout(r, 300));
+             
+             if (i % 5 === 0) res.write(`Processed ${i + 1}/${allProfiles.length}...\n`);
+        }
+        res.write("\n✅ MIGRATION COMPLETE! ALL DATA SAVED.");
+        res.end();
+    } catch (e) {
+        console.error(e);
+        res.write(`\n❌ CRITICAL ERROR: ${e.message}`);
+        res.end();
+    }
+});
+// --- [MIGRATION ROUTE END] ---
 
 // 404 + errors
 app.use(notFound);
