@@ -6,7 +6,7 @@ const prisma = require("../utils/prisma");
 const axios = require("axios"); // <--- ДОБАВЛЕНО: Для отправки запросов
 
 // ВСТАВЬ СЮДА СВОЮ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ВАШ_ДЛИННЫЙ_ID/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyA8bnRDh5h_Ok_xRBjqXplqZAP6VHZFvC8N8HdeT44JFeQFMcz3b1kowtGk6oV074Raw/exec';
 
 const SHARED_TOKEN = process.env.RENPY_EVENT_TOKEN?.trim();
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
