@@ -26,12 +26,6 @@
       <p class="hero-subtitle typing">
         ДОСТУП К МАРШРУТИЗАЦИИ... УСТАНОВКА ПОЛЕВОЙ СВЯЗИ...
       </p>
-
-      <div class="hero-info mt-8 flex flex-wrap justify-center gap-3">
-        <span class="tag">Оператор: {{ auth.user?.name || 'НЕИЗВЕСТЕН' }}</span>
-        <span class="tag">Допуск: {{ auth.user?.role || 'БЕЗ ДОСТУПА' }}</span>
-        <span class="tag">Подструктура: D-13</span>
-      </div>
     </section>
 
     <!-- === MAIN === -->
