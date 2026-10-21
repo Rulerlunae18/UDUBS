@@ -161,7 +161,7 @@ async function createPost(req, res) {
     // 🔥 правильная загрузка файла → Supabase
     if (req.file) {
       const safeName = `${Date.now()}-${req.file.originalname.replace(/[^\w.-]/g, "_")}`;
-      coverImage = await uploadToSupabase(req.file.path, safeName, req.file.mimetype);
+      coverImage = await uploadToSupabase(req.file);
       fileType = req.file.mimetype;
     }
 
@@ -224,7 +224,7 @@ async function updatePost(req, res) {
     // 🔥 если загружен новый файл → перезаливаем
     if (req.file) {
       const safeName = `${Date.now()}-${req.file.originalname.replace(/[^\w.-]/g, "_")}`;
-      coverImage = await uploadToSupabase(req.file.path, safeName, req.file.mimetype);
+      coverImage = await uploadToSupabase(req.file);
     }
 
     const updated = await prisma.post.update({

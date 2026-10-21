@@ -79,11 +79,7 @@ async function createFakeUser(req, res) {
     let avatarUrl = null;
 
     if (req.file) {
-      avatarUrl = await uploadToSupabase(
-        req.file.path,
-        req.file.filename,
-        req.file.mimetype
-      );
+      avatarUrl = await uploadToSupabase(req.file);
     }
 
     const created = await prisma.fakeUser.create({
@@ -121,11 +117,7 @@ async function updateFakeUser(req, res) {
     const data = { codename, rank, clearance, bio };
 
     if (req.file) {
-      const avatarUrl = await uploadToSupabase(
-        req.file.path,
-        req.file.filename,
-        req.file.mimetype
-      );
+      const avatarUrl = await uploadToSupabase(req.file);
       data.avatarUrl = avatarUrl;
     }
 
