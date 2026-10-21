@@ -31,7 +31,7 @@ services:
       - key: SUPABASE_SERVICE_KEY
         sync: false
       - key: FRONTEND_ORIGIN
-        value: https://udubs-frontend.onrender.com
+        value: https://udubs-frontend-1kn7.onrender.com,https://udubs-frontend.onrender.com
       - key: BACKEND_URL
         value: https://udubs-backend.onrender.com
       - key: ANTI_VPN_CHECK
