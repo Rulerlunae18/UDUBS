@@ -13,7 +13,8 @@ export default defineConfig({
 
   preview: {
     allowedHosts: [
-      "udubs-frontend.onrender.com"
+      "udubs-frontend.onrender.com",
+      ".onrender.com"
     ]
   }
 })
