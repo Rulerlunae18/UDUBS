@@ -33,7 +33,7 @@ services:
       - key: FRONTEND_ORIGIN
         value: https://udubs-frontend-1kn7.onrender.com,https://udubs-frontend.onrender.com
       - key: BACKEND_URL
-        value: https://udubs-backend.onrender.com
+        value: https://udubs-backend-1kn7.onrender.com
       - key: ANTI_VPN_CHECK
         value: false
       - key: UPLOAD_DIR
@@ -57,4 +57,4 @@ services:
 
     envVars:
       - key: VITE_BACKEND_URL
-        value: https://udubs-backend.onrender.com
+        value: https://udubs-backend-1kn7.onrender.com
